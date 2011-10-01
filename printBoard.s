@@ -14,9 +14,9 @@ printBoard: #()
 	cmpl	$9,8(%esp)	# print newline if newline % 9 == 0
 	jne		.nonewline
 	movl	$0,8(%esp)	# newline = 0
-	pushl	$.newline
-	call	printf		# printf("\n")
-	addl	$4,%esp
+	pushl	$10			# push \n
+	call	putchar
+	addl	$4,%esp		# pop \n
 .nonewline:
 	addl	$1,(%esp)	# i++
 	addl	$4,4(%esp)	# board[i*4]

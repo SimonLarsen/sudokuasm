@@ -8,15 +8,15 @@ int checkCol(int,int);
 int checkBox(int,int,int);
 
 int board[81] = {
-0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,3,0,8,5,
-0,0,1,0,2,0,0,0,0,
-0,0,0,5,0,7,0,0,0,
-0,0,4,0,0,0,1,0,0,
-0,9,0,0,0,0,0,0,0,
-5,0,0,0,0,0,0,7,3,
-0,0,2,0,1,0,0,0,0,
-0,0,0,0,4,0,0,0,9};
+0,0,8,1,0,0,5,0,0,
+9,6,0,0,8,0,0,0,0,
+0,5,0,0,3,6,0,9,8,
+0,0,7,0,6,9,0,1,2,
+0,0,6,8,0,7,3,0,0,
+8,1,0,4,5,0,6,0,0,
+4,2,0,6,7,0,0,8,0,
+0,0,0,0,4,0,0,6,3,
+0,0,5,0,0,8,7,0,0};
 
 void main(){
 	solve(0,0);
@@ -55,10 +55,10 @@ void solve(int inrow, int incol){
 }
 
 int try(int row, int col, int value){
-	if(checkRow(col,value) == 1){
+	if(checkRow(row,value) == 1){
 		return 1;
 	}
-	if(checkCol(row,value) == 1){
+	if(checkCol(col,value) == 1){
 		return 1;
 	}
 	if(checkBox(row,col,value) == 1){
@@ -67,20 +67,20 @@ int try(int row, int col, int value){
 	return 0;
 }
 
-int checkRow(int col, int value){
+int checkRow(int row, int value){
 	int i;
 	for(i = 0; i < 9; ++i) {
-		if(board[i+col*9] == value){
+		if(board[row+i*9] == value){
 			return 1;
 		}
 	}
 	return 0;
 }
 
-int checkCol(int row, int value){
+int checkCol(int col, int value){
 	int i;
 	for(i = 0; i < 9; ++i) {
-		if(board[row+i*9] == value){
+		if(board[i+col*9] == value){
 			return 1;
 		}
 	}
