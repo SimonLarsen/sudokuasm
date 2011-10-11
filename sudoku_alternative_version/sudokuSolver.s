@@ -88,18 +88,16 @@ success:
 try: #(row, col, val)
 	push	%ebp
 	movl	%esp, %ebp
-	push	$4			# offset = 4, check row
-	push	8(%ebp)		# push row number
 	push	16(%ebp)	# push value to be tested
-	call	checkColOrRow
-	addl	$12, %esp	# restore stack
+	push	8(%ebp)		# push row number
+	call	checkRow
+	addl	$8, %esp	# restore stack
 	cmpl	$1, %eax	# 
 	je		.tryFalse	# row check returned false
-	push	$36			# offset = 36, check col
-	push	12(%ebp)	# push col number
 	push	16(%ebp)	# push value to be tested
-	call	checkColOrRow
-	addl	$12, %esp	# restore stack
+	push	12(%ebp)	# push col number
+	call	checkCol
+	addl	$8, %esp	# restore stack
 	cmpl	$1, %eax
 	je		.tryFalse	# column check return false
 	push	16(%ebp)	# push value to be tested
@@ -111,33 +109,45 @@ try: #(row, col, val)
 	leave
 	ret	# returns with return value of checkBox or 1, if jumped to here
 
-checkColOrRow: #(val, row/col, offset)
-	push 	%ebp
-	movl	%esp, %ebp
-	cmpl	$4, 16(%ebp)	# if offset == 4
-	je		.rowInitOffset
-	movl	$4, %eax		# a = 4
-	jmp 	.calcOffset
-.rowInitOffset:
-	movl	$36, %eax		# a = 36
-.calcOffset:	
-	mull	12(%ebp)		# a = a*(row or col index)
-	movl	$board, %edx	# d = address of board
-	addl	%eax, %edx		# d = board+a
-	movl	$9, %eax
-	movl	8(%ebp), %ebx
-.loopCheck:					# for 8 downto 0
-	cmpl	%ebx, (%edx)
-	je		.falseCheck
-	addl	16(%ebp), %edx
-	subl	$1, %eax
-	jnz		.loopCheck
-	jmp		.escapeCheck
-.falseCheck:
-	movl	$1, %eax
-.escapeCheck:
+checkRow: #(row, val)
+	push	%ebp
+	movl	%esp,%ebp
+	movl	$9,%eax
+	mull	8(%esp)		
+	movl	%eax, %ecx	# c = row*9
+	movl	$9,%eax		# a = 9, use for counter
+	movl	12(%esp), %ebx
+.loopRow:
+	cmpl	%ebx, board(,%ecx,4)
+	je		.falseRow
+	incl	%ecx
+	decl	%eax
+	jnz		.loopRow
+	jmp		.doneRow
+.falseRow:
+	movl	$1,%eax
+.doneRow:
 	leave
-	ret	
+	ret
+
+checkCol: #(col, val)
+	push	%ebp
+	movl	%esp,%ebp
+	movl	8(%esp), %ecx # c = col
+	movl	$9,%eax		# a = 9, use for counter
+	movl	12(%esp), %ebx
+.loopCol:
+	cmpl	%ebx, board(,%ecx,4)
+	je		.falseCol
+	addl	$9,%ecx
+	decl	%eax
+	jnz		.loopCol
+	jmp		.doneCol
+.falseCol:
+	movl	$1,%eax
+.doneCol:
+	leave
+	ret
 
 checkBox: #(row,col,value)
 	pushl	%ebp

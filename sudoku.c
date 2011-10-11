@@ -2,24 +2,16 @@
 #include <stdlib.h>
 
 void printBoard();
+void readstdin();
 void solve(int,int);
 int checkRow(int,int);
 int checkCol(int,int);
 int checkBox(int,int,int);
 
-int board[81] = {
-0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,3,0,8,5,
-0,0,1,0,2,0,0,0,0,
-0,0,0,5,0,7,0,0,0,
-0,0,4,0,0,0,1,0,0,
-0,9,0,0,0,0,0,0,0,
-5,0,0,0,0,0,0,7,3,
-0,0,2,0,1,0,0,0,0,
-0,0,0,0,4,0,0,0,9
-};
+int board[81];
 
 void main(){
+	readstdin();
 	solve(0,0);
 	printf("Unsolvable sudoku");
 }
@@ -113,5 +105,13 @@ void printBoard(){
 			printf("%d ",board[ix+iy*9]);
 		}
 		printf("\n");
+	}
+}
+
+void readstdin(){
+	int i,c;
+	for(i = 0; i < 81; i++) {
+		c = getchar() - '0';
+		board[i] = c;
 	}
 }
