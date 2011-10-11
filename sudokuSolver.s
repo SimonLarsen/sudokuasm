@@ -26,7 +26,6 @@ main:
 solve: #(row, col)
 	push	%ebp
 	movl	%esp, %ebp
-	#call	printBoard
 	subl	$4, %esp		# reserve space for index	- 12(%esp)	
 	push	$1				# push value for counter to	- 8(%esp)
 	push	12(%ebp)		# local copy of col 		- 4(%esp)
@@ -45,7 +44,7 @@ solve: #(row, col)
 	movl	%eax, 12(%esp)	# index = a
 	cmpl	$0, board(,%eax,4) # skip cell if it contains a value
 	jne		.skipCheck
-.loop:
+.loopSolve:
 	push	8(%esp)			# value to be tested
 	push	8(%esp)			# col number, 8 because we just subbed 4
 	push	8(%esp)			# row number, 8 because we just subbed 8
@@ -67,8 +66,8 @@ solve: #(row, col)
 .skipTry:
 	addl	$1, 8(%esp)		# increment value
 	cmpl	$10, 8(%esp)	# check value <= 9
-	jne		.loop					
-	jmp		.done
+	jne		.loopSolve
+	jmp		.doneSolve
 .skipCheck:					# board[row+col*9] != 0
 	movl	4(%esp), %eax	# a = col
 	incl	%eax			# a = col+1
@@ -76,7 +75,7 @@ solve: #(row, col)
 	push	4(%esp)			# push row number, 4(%esp) because we pushed eax
 	call	solve			# solve(row,col+1)
 	addl	$8, %esp		# restore stack
-.done:
+.doneSolve:
 	addl	$16, %esp		#restore stack
 	leave
 	ret
@@ -95,20 +94,20 @@ try: #(row, col, val)
 	call	checkColOrRow
 	addl	$12, %esp	# restore stack
 	cmpl	$1, %eax	# 
-	je		.false		# row check returned false
+	je		.tryFalse	# row check returned false
 	push	$36			# offset = 36, check col
 	push	12(%ebp)	# push col number
 	push	16(%ebp)	# push value to be tested
 	call	checkColOrRow
 	addl	$12, %esp	# restore stack
 	cmpl	$1, %eax
-	je		.false		# column check return false
+	je		.tryFalse	# column check return false
 	push	16(%ebp)	# push value to be tested
 	push	8(%ebp)		# push col number BYTTET OM PAA ROW OR COL
 	push	12(%ebp)	# push row number
 	call	checkBox
 	addl	$12, %esp	# restore stack
-.false:
+.tryFalse:
 	leave
 	ret	# returns with return value of checkBox or 1, if jumped to here
 
@@ -126,17 +125,17 @@ checkColOrRow: #(val, row/col, offset)
 	movl	$board, %edx	# d = address of board
 	addl	%eax, %edx		# d = board+a
 	movl	$9, %eax
-.loop2: # for 8 downto 0
 	movl	8(%ebp), %ebx
+.loopCheck:					# for 8 downto 0
 	cmpl	%ebx, (%edx)
-	je		.false2
+	je		.falseCheck
 	addl	16(%ebp), %edx
 	subl	$1, %eax
-	jnz		.loop2
-	jmp		.escape
-.false2:
+	jnz		.loopCheck
+	jmp		.escapeCheck
+.falseCheck:
 	movl	$1, %eax
-.escape:
+.escapeCheck:
 	leave
 	ret	
 
@@ -160,23 +159,23 @@ checkBox: #(row,col,value)
 	movl	%eax,%edx		# a -> d - d now contains address of first cell in box
 	movl	$9,%ebx			# b = outer loop
 	movl	$3,%ecx			# c = inner loop
-.loop3:
+.loopBox:
 	movl	(%edx),%eax
 	cmpl	%eax,16(%esp)
-	je		.false3
+	je		.falseBox
 	decl	%ecx			# c--
-	jnz		.skip			
+	jnz		.skipBox
 	addl	$24,%edx		# skip to start of next row in box
 	movl	$3,%ecx			# restart inner loop
-.skip:
+.skipBox:
 	addl	$4,%edx			# move to next cell
 	decl	%ebx			# d--
-	jnz		.loop3
+	jnz		.loopBox
 	xorl	%eax,%eax		# a = 0 = true
-	jmp		.escape3
-.false3:
+	jmp		.escapeBox
+.falseBox:
 	movl	$1,%eax			# a = 1 = false
-.escape3:
+.escapeBox:
 	leave
 	ret
 
@@ -186,7 +185,7 @@ printBoard: #()
 	pushl	$0			# newline?
 	pushl	$board		# board[0]
 	pushl	$0			# i = 0
-.loop4:
+.printLoop:
 	movl	4(%esp),%ebx
 	pushl	(%ebx)		# push board[i*4]
 	pushl	$.nomsg
@@ -203,7 +202,7 @@ printBoard: #()
 	addl	$1,(%esp)	# i++
 	addl	$4,4(%esp)	# board[i*4]
 	cmpl	$81,(%esp) 	# while i != 81
-	jne		.loop4
+	jne		.printLoop
 	addl	$12,%esp 	# pop i, board and newline
 	pushl	$.newline
 	call	printf
@@ -213,12 +212,12 @@ printBoard: #()
 
 .data
 board:
-	.long 0,0,8,1,0,0,5,0,0
-	.long 9,6,0,0,8,0,0,0,0
-	.long 0,5,0,0,3,6,0,9,8
-	.long 0,0,7,0,6,9,0,1,2
-	.long 0,0,6,8,0,7,3,0,0
-	.long 8,1,0,4,5,0,6,0,0
-	.long 4,2,0,6,7,0,0,8,0
-	.long 0,0,0,0,4,0,0,6,3
-	.long 0,0,5,0,0,8,7,0,0
+	.long 2,3,0,0,0,0,1,0,0
+	.long 0,5,0,0,8,0,0,6,3
+	.long 0,6,0,0,7,0,8,0,9
+	.long 7,4,0,3,2,0,0,1,0
+	.long 0,8,0,9,0,5,0,2,0
+	.long 0,2,0,0,4,8,0,9,6
+	.long 6,0,5,0,3,0,0,8,0
+	.long 4,9,0,0,6,0,0,3,0
+	.long 0,0,3,0,0,0,0,4,1
