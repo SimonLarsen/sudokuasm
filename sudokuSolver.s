@@ -17,7 +17,7 @@ main:
 	push	$0
 	push	$0
 	call	solve			# solve(0,0)
-	push	$.error
+	push	$.error			# if solve returned it means we failed to solve the sudoku
 	call	printf			# print error message
 	addl	$12, %esp		# restore stack
 	leave
@@ -40,19 +40,17 @@ solve: #(row, col)
 	movl	$9,%eax			# a = 9
 	mull	(%esp)			# a = row * 9
 	addl	4(%esp), %eax	# a = row * 9 + col
-	#shll	$2, %eax		# (col * 9 + row) * 4
 	movl	%eax, 12(%esp)	# index = a
 	cmpl	$0, board(,%eax,4) # skip cell if it contains a value
 	jne		.skipCheck
-.loopSolve:
 	push	8(%esp)			# value to be tested
 	push	8(%esp)			# col number, 8 because we just subbed 4
 	push	8(%esp)			# row number, 8 because we just subbed 8
-	call	try				# try(row,col,value)
-	addl	$12, %esp		# pop arguments from stack 
+.loopSolve:
+	call	try				# try(row,col,value), NOTE: These arguments are on stack for entire loop
 	cmpl	$0, %eax
 	jne		.skipTry		# skip to next value if try returned false
-	movl	12(%esp), %eax	# a = index
+	movl	24(%esp), %eax	# a = index
 	movl	8(%esp), %ebx	# b = value
 	movl	%ebx, board(,%eax,4) # board[row+col*9] = value
 	movl	4(%esp), %eax	# a = col
@@ -61,12 +59,13 @@ solve: #(row, col)
 	push	4(%esp)			# push row, 4(%esp) because we just pushed eax
 	call	solve			# solve(row,col+1)
 	addl	$8, %esp		# pop arguments
-	movl	12(%esp), %eax	# a = index
+	movl	24(%esp), %eax	# a = index
 	movl	$0, board(,%eax,4) # board[row+col*9] = 0
 .skipTry:
 	addl	$1, 8(%esp)		# increment value
 	cmpl	$10, 8(%esp)	# check value <= 9
 	jne		.loopSolve
+	addl	$12, %esp		# Remove row,col,value from stack
 	jmp		.doneSolve
 .skipCheck:					# board[row+col*9] != 0
 	movl	4(%esp), %eax	# a = col
@@ -212,12 +211,12 @@ printBoard: #()
 
 .data
 board:
-	.long 2,3,0,0,0,0,1,0,0
-	.long 0,5,0,0,8,0,0,6,3
-	.long 0,6,0,0,7,0,8,0,9
-	.long 7,4,0,3,2,0,0,1,0
-	.long 0,8,0,9,0,5,0,2,0
-	.long 0,2,0,0,4,8,0,9,6
-	.long 6,0,5,0,3,0,0,8,0
-	.long 4,9,0,0,6,0,0,3,0
-	.long 0,0,3,0,0,0,0,4,1
+.long	0,0,0,0,0,0,0,0,0
+.long	0,0,0,0,0,3,0,8,5
+.long	0,0,1,0,2,0,0,0,0
+.long	0,0,0,5,0,7,0,0,0
+.long	0,0,4,0,0,0,1,0,0
+.long	0,9,0,0,0,0,0,0,0
+.long	5,0,0,0,0,0,0,7,3
+.long	0,0,2,0,1,0,0,0,0
+.long	0,0,0,0,4,0,0,0,9
