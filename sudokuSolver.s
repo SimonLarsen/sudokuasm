@@ -14,6 +14,7 @@
 main:
 	push	%ebp
 	movl	%esp, %ebp
+	call	readstdin		# read sudoku from stdin
 	push	$0
 	push	$0
 	call	solve			# solve(0,0)
@@ -209,14 +210,22 @@ printBoard: #()
 	leave
 	ret
 
+readstdin:
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	$0
+	.readLoop:
+	call	getchar	
+	subl	$48,%eax
+	movl	(%esp), %ebx
+	movl	%eax, board(,%ebx,4)
+	addl	$1, (%esp)
+	cmpl	$81, (%esp)
+	jne		.readLoop
+	addl	$4,%esp
+	leave
+	ret
+
 .data
-board:
-.long	0,0,0,0,0,0,0,0,0
-.long	0,0,0,0,0,3,0,8,5
-.long	0,0,1,0,2,0,0,0,0
-.long	0,0,0,5,0,7,0,0,0
-.long	0,0,4,0,0,0,1,0,0
-.long	0,9,0,0,0,0,0,0,0
-.long	5,0,0,0,0,0,0,7,3
-.long	0,0,2,0,1,0,0,0,0
-.long	0,0,0,0,4,0,0,0,9
+board: # 81 long
+	.long	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0	
