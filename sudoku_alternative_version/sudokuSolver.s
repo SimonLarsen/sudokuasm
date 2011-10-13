@@ -92,7 +92,7 @@ try: #(row, col, val)
 	push	8(%ebp)		# push row number
 	call	checkRow
 	addl	$8, %esp	# restore stack
-	cmpl	$1, %eax	# 
+	cmpl	$1, %eax
 	je		.tryFalse	# row check returned false
 	push	16(%ebp)	# push value to be tested
 	push	12(%ebp)	# push col number
@@ -101,8 +101,8 @@ try: #(row, col, val)
 	cmpl	$1, %eax
 	je		.tryFalse	# column check return false
 	push	16(%ebp)	# push value to be tested
-	push	8(%ebp)		# push col number BYTTET OM PAA ROW OR COL
-	push	12(%ebp)	# push row number
+	push	8(%ebp)		# push row number
+	push	12(%ebp)	# push col number
 	call	checkBox
 	addl	$12, %esp	# restore stack
 .tryFalse:
@@ -149,19 +149,19 @@ checkCol: #(col, val)
 	leave
 	ret
 
-checkBox: #(row,col,value)
+checkBox: #(col,row,value)
 	pushl	%ebp
 	movl	%esp,%ebp
-	movl	12(%esp),%eax	# a = col
+	movl	12(%esp),%eax	# a = row
 	xorl	%edx,%edx		# d = 0
 	movl	$3,%ebx			# b = 3
-	divl	%ebx			# a = col/3
-	movl	$9,%ebx			# b = 9
-	mull	%ebx			# a = (col/3)*9
-	movl	%eax,%ecx		# a -> c
-	movl	8(%esp),%eax	# a = row
-	movl	$3,%ebx			# b = 3
 	divl	%ebx			# a = row/3
+	movl	$9,%ebx			# b = 9
+	mull	%ebx			# a = (row/3)*9
+	movl	%eax,%ecx		# a -> c
+	movl	8(%esp),%eax	# a = col
+	movl	$3,%ebx			# b = 3
+	divl	%ebx			# a = col/3
 	addl	%ecx,%eax		# a = a+c
 	mull	%ebx			# a = (a+c*3)
 	shll	$2,%eax			# a = a << 2 = a*4
