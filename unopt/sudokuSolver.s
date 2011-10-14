@@ -41,9 +41,10 @@ solve: #(row, col)
 	movl	$9,%eax			# a = 9
 	mull	(%esp)			# a = row * 9
 	addl	4(%esp), %eax	# a = row * 9 + col
-	#shll	$2, %eax		# (col * 9 + row) * 4
+	shll	$2, %eax		# (row * 9 + col) * 4
+	addl	$board,%eax		
 	movl	%eax, 12(%esp)	# index = a
-	cmpl	$0, board(,%eax,4) # skip cell if it contains a value
+	cmpl	$0, (%eax) # skip cell if it contains a value
 	jne		.skipCheck
 .loopSolve:
 	push	8(%esp)			# value to be tested
@@ -55,7 +56,7 @@ solve: #(row, col)
 	jne		.skipTry		# skip to next value if try returned false
 	movl	12(%esp), %eax	# a = index
 	movl	8(%esp), %ebx	# b = value
-	movl	%ebx, board(,%eax,4) # board[row+col*9] = value
+	movl	%ebx, (%eax) # board[row+col*9] = value
 	movl	4(%esp), %eax	# a = col
 	incl	%eax			# a = col+1
 	push	%eax			# push col+1
@@ -63,7 +64,7 @@ solve: #(row, col)
 	call	solve			# solve(row,col+1)
 	addl	$8, %esp		# pop arguments
 	movl	12(%esp), %eax	# a = index
-	movl	$0, board(,%eax,4) # board[row+col*9] = 0
+	movl	$0, (%eax) # board[row+col*9] = 0
 .skipTry:
 	addl	$1, 8(%esp)		# increment value
 	cmpl	$10, 8(%esp)	# check value <= 9
