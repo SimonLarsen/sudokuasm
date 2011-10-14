@@ -41,17 +41,19 @@ solve: #(row, col)
 	movl	$9,%eax			# a = 9
 	mull	(%esp)			# a = row * 9
 	addl	4(%esp), %eax	# a = row * 9 + col
+	#shll	$2, %eax		# (col * 9 + row) * 4
 	movl	%eax, 12(%esp)	# index = a
 	cmpl	$0, board(,%eax,4) # skip cell if it contains a value
 	jne		.skipCheck
+.loopSolve:
 	push	8(%esp)			# value to be tested
 	push	8(%esp)			# col number, 8 because we just subbed 4
 	push	8(%esp)			# row number, 8 because we just subbed 8
-.loopSolve:
-	call	try				# try(row,col,value), NOTE: These arguments are on stack for entire loop
+	call	try				# try(row,col,value)
+	addl	$12, %esp		# pop arguments from stack 
 	cmpl	$0, %eax
 	jne		.skipTry		# skip to next value if try returned false
-	movl	24(%esp), %eax	# a = index
+	movl	12(%esp), %eax	# a = index
 	movl	8(%esp), %ebx	# b = value
 	movl	%ebx, board(,%eax,4) # board[row+col*9] = value
 	movl	4(%esp), %eax	# a = col
@@ -60,13 +62,12 @@ solve: #(row, col)
 	push	4(%esp)			# push row, 4(%esp) because we just pushed eax
 	call	solve			# solve(row,col+1)
 	addl	$8, %esp		# pop arguments
-	movl	24(%esp), %eax	# a = index
+	movl	12(%esp), %eax	# a = index
 	movl	$0, board(,%eax,4) # board[row+col*9] = 0
 .skipTry:
 	addl	$1, 8(%esp)		# increment value
 	cmpl	$10, 8(%esp)	# check value <= 9
 	jne		.loopSolve
-	addl	$12, %esp		# Remove row,col,value from stack
 	jmp		.doneSolve
 .skipCheck:					# board[row+col*9] != 0
 	movl	4(%esp), %eax	# a = col
@@ -101,8 +102,8 @@ try: #(row, col, val)
 	cmpl	$1, %eax
 	je		.tryFalse		# column check return false
 	push	16(%ebp)		# push value to be tested
-	push	8(%ebp)			# push col number BYTTET OM PAA ROW OR COL
-	push	12(%ebp)		# push row number
+	push	12(%ebp)		# push col number
+	push	8(%ebp)			# push row number
 	call	checkBox
 	addl	$12, %esp		# restore stack
 .tryFalse:
@@ -112,10 +113,10 @@ try: #(row, col, val)
 checkRow: #(row, val)
 	push	%ebp
 	movl	%esp,%ebp
-	movl	$36, %eax		# a = 36
+	movl	$36, %eax		# a = 9*4 = 36
 	mull	8(%esp)			# a = row*36
 	addl	$board,%eax 	# a = board + row*36
-	movl	$0,%ecx			# c = 0, use for counter
+	xorl	%ecx,%ecx		# c = 0, use for counter
 	movl	12(%esp), %ebx	# b = val
 .loopRow:
 	cmpl	%ebx, (%eax)	# is current cell == val?
@@ -138,7 +139,7 @@ checkCol: #(col, val)
 	movl	8(%esp), %ecx 	# c = col
 	shll	$2,%ecx			# c = col*4
 	addl	$board,%ecx		# c = board + col*4
-	movl	$0,%eax			# a = 0, use for counter
+	xorl	%eax,%eax		# a = 0, use for counter
 	movl	12(%esp), %ebx	# b = val
 .loopCol:
 	cmpl	%ebx, (%ecx)	# is current cell == val?
@@ -147,46 +148,48 @@ checkCol: #(col, val)
 	incl	%eax			# a++
 	cmpl	$9,%eax			# loop while a < 9
 	jne		.loopCol
+	xorl	%eax,%eax		# a = 0, return true
 	jmp		.doneCol
 .falseCol:
 	movl	$1,%eax			# a = 1, return false
 .doneCol:
-	xorl	%eax,%eax		# a = 0, return true
 	leave
 	ret
 
 checkBox: #(row,col,value)
 	pushl	%ebp
 	movl	%esp,%ebp
-	movl	12(%esp),%eax	# a = col
+	movl	8(%esp),%eax	# a = row
 	xorl	%edx,%edx		# d = 0
 	movl	$3,%ebx			# b = 3
-	divl	%ebx			# a = col/3
-	movl	$9,%ebx			# b = 9
-	mull	%ebx			# a = (col/3)*9
-	movl	%eax,%ecx		# a -> c
-	movl	8(%esp),%eax	# a = row
-	movl	$3,%ebx			# b = 3
 	divl	%ebx			# a = row/3
+	movl	$9,%ebx			# b = 9
+	mull	%ebx			# a = (row/3)*9
+	movl	%eax,%ecx		# a -> c
+	movl	12(%esp),%eax	# a = col
+	movl	$3,%ebx			# b = 3
+	divl	%ebx			# a = col/3
 	addl	%ecx,%eax		# a = a+c
 	mull	%ebx			# a = (a+c)*3
 	shll	$2,%eax			# a = a << 2 = a*4
 	addl	$board,%eax		# add board address to a
-	movl	%eax,%edx		# a -> d - d now contains address of first cell in box
-	movl	$9,%ebx			# b = outer loop
-	movl	$3,%ecx			# c = inner loop
+	movl	%eax, %edx		# a -> d - d now contains address of first cell in box
+	xorl	%ebx, %ebx		# b = outer loop, from 0 to 8
+	xorl	%ecx, %ecx		# c = inner loop, from 0 to 3
 .loopBox:
-	movl	(%edx),%eax
-	cmpl	%eax,16(%esp)
-	je		.falseBox
-	decl	%ecx			# c--
-	jnz		.skipBox
+	movl	(%edx),%eax		# a = adress at d
+	cmpl	%eax,16(%esp)	# is a == val?
+	je		.falseBox		# then jump to falseBox
+	incl	%ecx			# increment inner loop
+	cmpl	$3,%ecx
+	jne		.skipBox
 	addl	$24,%edx		# skip to start of next row in box
-	movl	$3,%ecx			# restart inner loop
+	xorl	%ecx,%ecx		# restart inner loop
 .skipBox:
 	addl	$4,%edx			# move to next cell
-	decl	%ebx			# d--
-	jnz		.loopBox
+	incl	%ebx			# decrement outer loop
+	cmpl	$9,%ebx
+	jne		.loopBox
 	xorl	%eax,%eax		# a = 0 = true
 	jmp		.escapeBox
 .falseBox:
