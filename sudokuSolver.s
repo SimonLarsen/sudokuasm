@@ -88,37 +88,35 @@ success:
 try: #(row, col, val)
 	push	%ebp
 	movl	%esp, %ebp
-	push	16(%ebp)	# push value to be tested
+	movl	16(%ebp), %esi	# store value to be tested in %esi
 	push	8(%ebp)		# push row number
 	call	checkRow
-	addl	$8, %esp	# restore stack
+	addl	$4, %esp	# restore stack
 	cmpl	$1, %eax
 	je		.tryFalse	# row check returned false
-	push	16(%ebp)	# push value to be tested
 	push	12(%ebp)	# push col number
 	call	checkCol
-	addl	$8, %esp	# restore stack
+	addl	$4, %esp	# restore stack
 	cmpl	$1, %eax
 	je		.tryFalse	# column check return false
-	push	16(%ebp)	# push value to be tested
 	push	8(%ebp)		# push row number
 	push	12(%ebp)	# push col number
 	call	checkBox
-	addl	$12, %esp	# restore stack
+	addl	$8, %esp	# restore stack
 .tryFalse:
 	leave
 	ret	# returns with return value of checkBox or 1, if jumped to here
 
-checkRow: #(row, val)
+checkRow: #(row)
 	push	%ebp
 	movl	%esp,%ebp
 	movl	$9,%eax
 	mull	8(%esp)		
 	movl	%eax, %ecx	# c = row*9
 	movl	$9,%eax		# a = 9, use for counter
-	movl	12(%esp), %ebx
+	#movl	12(%esp), %ebx
 .loopRow:
-	cmpl	%ebx, board(,%ecx,4)
+	cmpl	%esi, board(,%ecx,4)
 	je		.falseRow
 	incl	%ecx
 	decl	%eax
@@ -130,14 +128,13 @@ checkRow: #(row, val)
 	leave
 	ret
 
-checkCol: #(col, val)
+checkCol: #(col)
 	push	%ebp
 	movl	%esp,%ebp
-	movl	8(%esp), %ecx # c = col
-	movl	$9,%eax		# a = 9, use for counter
-	movl	12(%esp), %ebx
+	movl	8(%esp), %ecx 	# c = col
+	movl	$9,%eax			# a = 9, use for counter
 .loopCol:
-	cmpl	%ebx, board(,%ecx,4)
+	cmpl	%esi, board(,%ecx,4)
 	je		.falseCol
 	addl	$9,%ecx
 	decl	%eax
@@ -149,7 +146,7 @@ checkCol: #(col, val)
 	leave
 	ret
 
-checkBox: #(col,row,value)
+checkBox: #(col,row)
 	pushl	%ebp
 	movl	%esp,%ebp
 	movl	12(%esp),%eax	# a = row
@@ -157,13 +154,13 @@ checkBox: #(col,row,value)
 	movl	$3,%ebx			# b = 3
 	divl	%ebx			# a = row/3
 	movl	$9,%ebx			# b = 9
-	mull	%ebx			# a = (row/3)*9
+	mull	%ebx			# a = a*9 = (row/3)*9
 	movl	%eax,%ecx		# a -> c
 	movl	8(%esp),%eax	# a = col
 	movl	$3,%ebx			# b = 3
 	divl	%ebx			# a = col/3
 	addl	%ecx,%eax		# a = a+c
-	mull	%ebx			# a = (a+c*3)
+	mull	%ebx			# a = (a+c)*3
 	shll	$2,%eax			# a = a << 2 = a*4
 	addl	$board,%eax		# add board address to a
 	movl	%eax,%edx		# a -> d - d now contains address of first cell in box
@@ -171,7 +168,7 @@ checkBox: #(col,row,value)
 	movl	$3,%ecx			# c = inner loop
 .loopBox:
 	movl	(%edx),%eax
-	cmpl	%eax,16(%esp)
+	cmpl	%eax, %esi
 	je		.falseBox
 	decl	%ecx			# c--
 	jnz		.skipBox
