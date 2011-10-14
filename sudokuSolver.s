@@ -89,20 +89,20 @@ try: #(row, col, val)
 	push	%ebp
 	movl	%esp, %ebp
 	movl	16(%ebp), %esi	# store value to be tested in %esi
-	push	8(%ebp)		# push row number
+	push	8(%ebp)			# push row number
 	call	checkRow
-	addl	$4, %esp	# restore stack
+	addl	$4, %esp		# restore stack
 	cmpl	$1, %eax
-	je		.tryFalse	# row check returned false
-	push	12(%ebp)	# push col number
+	je		.tryFalse		# row check returned false
+	push	12(%ebp)		# push col number
 	call	checkCol
-	addl	$4, %esp	# restore stack
+	addl	$4, %esp		# restore stack
 	cmpl	$1, %eax
-	je		.tryFalse	# column check return false
-	push	8(%ebp)		# push row number
-	push	12(%ebp)	# push col number
+	je		.tryFalse		# column check return false
+	push	8(%ebp)			# push row number
+	push	12(%ebp)		# push col number
 	call	checkBox
-	addl	$8, %esp	# restore stack
+	addl	$8, %esp		# restore stack
 .tryFalse:
 	leave
 	ret	# returns with return value of checkBox or 1, if jumped to here
@@ -110,38 +110,36 @@ try: #(row, col, val)
 checkRow: #(row)
 	push	%ebp
 	movl	%esp,%ebp
-	movl	$9,%eax
-	mull	8(%esp)		
-	movl	%eax, %ecx	# c = row*9
-	movl	$9,%eax		# a = 9, use for counter
-	#movl	12(%esp), %ebx
+	movl	$9,%eax			# a = 9
+	mull	8(%esp)			# a = a * row number
+	movl	$9,%ecx			# c = 9, use for counter
 .loopRow:
-	cmpl	%esi, board(,%ecx,4)
+	cmpl	%esi, board(,%eax,4) # check if board at index contains value
 	je		.falseRow
-	incl	%ecx
-	decl	%eax
-	jnz		.loopRow
+	incl	%eax			# a++
+	loopnz	.loopRow		# c--, and continue loop if c > 0
+	xorl	%eax,%eax		# a = 0, return value if row did not contain value
 	jmp		.doneRow
 .falseRow:
-	movl	$1,%eax
+	movl	$1,%eax			# return 1 if board at index contained value
 .doneRow:
 	leave
-	ret
+	ret	
 
 checkCol: #(col)
 	push	%ebp
 	movl	%esp,%ebp
-	movl	8(%esp), %ecx 	# c = col
-	movl	$9,%eax			# a = 9, use for counter
+	movl	8(%esp), %eax 	# a = col number
+	movl	$9,%ecx			# c = 9, use for counter
 .loopCol:
-	cmpl	%esi, board(,%ecx,4)
+	cmpl	%esi, board(,%eax,4) # check if board at index contains value
 	je		.falseCol
-	addl	$9,%ecx
-	decl	%eax
-	jnz		.loopCol
+	addl	$9,%eax			# a += 9
+	loopnz	.loopCol		# c--, and continue loop if c > 0
+	xorl	%eax,%eax		# a = 0, return value if column did not contain value
 	jmp		.doneCol
 .falseCol:
-	movl	$1,%eax
+	movl	$1,%eax			# return 1 if board at index contained value
 .doneCol:
 	leave
 	ret
@@ -164,20 +162,19 @@ checkBox: #(col,row)
 	shll	$2,%eax			# a = a << 2 = a*4
 	addl	$board,%eax		# add board address to a
 	movl	%eax,%edx		# a -> d - d now contains address of first cell in box
-	movl	$9,%ebx			# b = outer loop
-	movl	$3,%ecx			# c = inner loop
+	movl	$9,%ecx			# c = outer loop
+	movl	$3,%ebx			# b = inner loop
 .loopBox:
 	movl	(%edx),%eax
 	cmpl	%eax, %esi
 	je		.falseBox
-	decl	%ecx			# c--
+	decl	%ebx			# c--
 	jnz		.skipBox
 	addl	$24,%edx		# skip to start of next row in box
-	movl	$3,%ecx			# restart inner loop
+	movl	$3,%ebx			# restart inner loop
 .skipBox:
 	addl	$4,%edx			# move to next cell
-	decl	%ebx			# d--
-	jnz		.loopBox
+	loopnz	.loopBox
 	xorl	%eax,%eax		# a = 0 = true
 	jmp		.escapeBox
 .falseBox:
